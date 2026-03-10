@@ -1,0 +1,209 @@
+<!-- import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import { Disaster } from '../data/disasters';
+
+interface DisasterChartsProps {
+  disasters: Disaster[];
+}
+
+const COLORS = {
+  earthquake: '#8b7355', // earth brown
+  hurricane: '#6b9080', // ocean teal
+  flood: '#5b9aa0', // water blue
+  wildfire: '#d4a574', // warm sand/orange
+  tornado: '#8a9a5b', // storm gray-green
+  tsunami: '#4a7c8f', // deep ocean
+};
+
+const SEVERITY_COLORS = ['#fef08a', '#facc15', '#fb923c', '#f97316', '#dc2626'];
+
+export function DisasterCharts({ disasters }: DisasterChartsProps) {
+  // Process data for timeline chart
+  const timelineData = disasters
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .reduce((acc: any[], disaster) => {
+      const monthYear = disaster.date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+      });
+      const existing = acc.find((item) => item.month === monthYear);
+      if (existing) {
+        existing.count += 1;
+        existing.casualties += disaster.casualties;
+        existing.affected += disaster.affectedPeople;
+      } else {
+        acc.push({
+          month: monthYear,
+          count: 1,
+          casualties: disaster.casualties,
+          affected: disaster.affectedPeople,
+        });
+      }
+      return acc;
+    }, []);
+
+  // Process data for type distribution
+  const typeData = Object.entries(
+    disasters.reduce((acc: Record<string, number>, disaster) => {
+      acc[disaster.type] = (acc[disaster.type] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([type, count]) => ({
+    type: type.charAt(0).toUpperCase() + type.slice(1),
+    count,
+    casualties: disasters
+      .filter((d) => d.type === type)
+      .reduce((sum, d) => sum + d.casualties, 0),
+  }));
+
+  // Process data for severity distribution
+  const severityData = [1, 2, 3, 4, 5].map((level) => ({
+    severity: `Level ${level}`,
+    count: disasters.filter((d) => d.severity === level).length,
+  }));
+
+  return (
+    <div class="space-y-6">
+      {/* Timeline Chart */}
+      <div class="bg-card p-6 rounded-xl shadow-md border border-border">
+        <div class="mb-4">
+          <h2 class="text-xl text-foreground">Disaster Timeline</h2>
+          <p class="text-sm text-muted-foreground mt-1">Trends over time</p>
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={timelineData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e8e1d5" />
+            <XAxis dataKey="month" stroke="#6b5d4f" />
+            <YAxis yAxisId="left" stroke="#6b5d4f" />
+            <YAxis yAxisId="right" orientation="right" stroke="#6b5d4f" />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e8e1d5',
+                borderRadius: '8px',
+              }}
+            />
+            <Legend />
+            <Line
+              yAxisId="left"
+              type="monotone"
+              dataKey="count"
+              stroke="#3a5a40"
+              strokeWidth={3}
+              name="Number of Disasters"
+              dot={{ fill: '#3a5a40', r: 4 }}
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="casualties"
+              stroke="#c44536"
+              strokeWidth={3}
+              name="Casualties"
+              dot={{ fill: '#c44536', r: 4 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Type Distribution Chart */}
+        <div class="bg-card p-6 rounded-xl shadow-md border border-border">
+          <div class="mb-4">
+            <h2 class="text-xl text-foreground">Distribution by Type</h2>
+            <p class="text-sm text-muted-foreground mt-1">Occurrences and impact</p>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={typeData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e8e1d5" />
+              <XAxis dataKey="type" stroke="#6b5d4f" />
+              <YAxis stroke="#6b5d4f" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e8e1d5',
+                  borderRadius: '8px',
+                }}
+              />
+              <Legend />
+              <Bar dataKey="count" name="Occurrences" fill="#588157" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="casualties" name="Casualties" fill="#c44536" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Severity Distribution Chart */}
+        <div class="bg-card p-6 rounded-xl shadow-md border border-border">
+          <div class="mb-4">
+            <h2 class="text-xl text-foreground">Severity Distribution</h2>
+            <p class="text-sm text-muted-foreground mt-1">Distribution across levels</p>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={severityData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ severity, count }) => `${severity}: ${count}`}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="count"
+              >
+                {severityData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={SEVERITY_COLORS[index]} stroke="#ffffff" strokeWidth={2} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e8e1d5',
+                  borderRadius: '8px',
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Statistics Summary */}
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-card p-6 rounded-xl shadow-md border border-border text-center hover:shadow-lg transition-shadow">
+          <div class="text-3xl mb-2 text-primary">{disasters.length}</div>
+          <div class="text-muted-foreground">Total Disasters</div>
+        </div>
+        <div class="bg-card p-6 rounded-xl shadow-md border border-border text-center hover:shadow-lg transition-shadow">
+          <div class="text-3xl mb-2 text-destructive">
+            {disasters.reduce((sum, d) => sum + d.casualties, 0).toLocaleString()}
+          </div>
+          <div class="text-muted-foreground">Total Casualties</div>
+        </div>
+        <div class="bg-card p-6 rounded-xl shadow-md border border-border text-center hover:shadow-lg transition-shadow">
+          <div class="text-3xl mb-2 text-accent">
+            {(disasters.reduce((sum, d) => sum + d.affectedPeople, 0) / 1000000).toFixed(1)}M
+          </div>
+          <div class="text-muted-foreground">People Affected</div>
+        </div>
+        <div class="bg-card p-6 rounded-xl shadow-md border border-border text-center hover:shadow-lg transition-shadow">
+          <div class="text-3xl mb-2 text-secondary">
+            {(disasters.reduce((sum, d) => sum + d.severity, 0) / disasters.length).toFixed(1)}
+          </div>
+          <div class="text-muted-foreground">Avg Severity</div>
+        </div>
+      </div>
+    </div>
+  );
+} -->

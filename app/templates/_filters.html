@@ -1,0 +1,176 @@
+<!-- import { Filter } from 'lucide-react';
+import { Disaster } from '../data/disasters';
+
+interface FiltersProps {
+  selectedTypes: string[];
+  onTypesChange: (types: string[]) => void;
+  selectedSeverities: number[];
+  onSeveritiesChange: (severities: number[]) => void;
+  dateRange: { start: Date; end: Date };
+  onDateRangeChange: (range: { start: Date; end: Date }) => void;
+}
+
+const disasterTypes: Disaster['type'][] = [
+  'earthquake',
+  'hurricane',
+  'flood',
+  'wildfire',
+  'tornado',
+  'tsunami',
+];
+
+const disasterTypeIcons = {
+  earthquake: '🌍',
+  hurricane: '🌀',
+  flood: '🌊',
+  wildfire: '🔥',
+  tornado: '🌪️',
+  tsunami: '🌊',
+};
+
+const severityLevels = [1, 2, 3, 4, 5];
+
+export function Filters({
+  selectedTypes,
+  onTypesChange,
+  selectedSeverities,
+  onSeveritiesChange,
+  dateRange,
+  onDateRangeChange,
+}: FiltersProps) {
+  const toggleType = (type: string) => {
+    if (selectedTypes.includes(type)) {
+      onTypesChange(selectedTypes.filter((t) => t !== type));
+    } else {
+      onTypesChange([...selectedTypes, type]);
+    }
+  };
+
+  const toggleSeverity = (severity: number) => {
+    if (selectedSeverities.includes(severity)) {
+      onSeveritiesChange(selectedSeverities.filter((s) => s !== severity));
+    } else {
+      onSeveritiesChange([...selectedSeverities, severity]);
+    }
+  };
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onDateRangeChange({ ...dateRange, start: new Date(e.target.value) });
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onDateRangeChange({ ...dateRange, end: new Date(e.target.value) });
+  };
+
+  return (
+    <div class="bg-card rounded-xl shadow-md border border-border overflow-hidden">
+      {/* Header */}
+      <div class="bg-gradient-to-br from-primary to-accent p-5 border-b border-border/20">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <Filter class="w-5 h-5 text-white" />
+          </div>
+          <h2 class="text-xl text-white">Filters</h2>
+        </div>
+      </div>
+
+      <div class="p-5 space-y-6">
+        {/* Disaster Type Filter */}
+        <div>
+          <h3 class="mb-3.5 text-foreground/90 flex items-center gap-2">
+            <span class="w-1 h-5 bg-accent rounded-full"></span>
+            Disaster Type
+          </h3>
+          <div class="grid grid-cols-2 gap-2.5">
+            {disasterTypes.map((type) => (
+              <button
+                key={type}
+                onClick={() => toggleType(type)}
+                class={`group px-3.5 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-2 border ${
+                  selectedTypes.includes(type)
+                    ? 'bg-accent text-white border-accent shadow-md scale-[1.02]'
+                    : 'bg-muted/50 text-foreground/70 border-border hover:bg-muted hover:border-accent/30 hover:scale-[1.02]'
+                }`}
+              >
+                <span class="text-base">{disasterTypeIcons[type as keyof typeof disasterTypeIcons]}</span>
+                <span class="truncate">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Severity Filter */}
+        <div>
+          <h3 class="mb-3.5 text-foreground/90 flex items-center gap-2">
+            <span class="w-1 h-5 bg-accent rounded-full"></span>
+            Severity Level
+          </h3>
+          <div class="flex gap-2">
+            {severityLevels.map((level) => {
+              const severityColors = [
+                { bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-800', active: 'bg-yellow-400 border-yellow-500' },
+                { bg: 'bg-yellow-200', border: 'border-yellow-400', text: 'text-yellow-900', active: 'bg-yellow-500 border-yellow-600' },
+                { bg: 'bg-orange-200', border: 'border-orange-400', text: 'text-orange-900', active: 'bg-orange-500 border-orange-600' },
+                { bg: 'bg-red-300', border: 'border-red-500', text: 'text-red-900', active: 'bg-red-600 border-red-700' },
+                { bg: 'bg-red-400', border: 'border-red-600', text: 'text-red-950', active: 'bg-red-700 border-red-800' },
+              ];
+              const colorSet = severityColors[level - 1];
+              return (
+                <button
+                  key={level}
+                  onClick={() => toggleSeverity(level)}
+                  class={`flex-1 aspect-square rounded-lg text-sm transition-all duration-200 border-2 ${
+                    selectedSeverities.includes(level)
+                      ? `${colorSet.active} text-white shadow-md scale-[1.05]`
+                      : `${colorSet.bg} ${colorSet.border} ${colorSet.text} hover:scale-[1.05] hover:shadow-sm`
+                  }`}
+                  title={`Severity Level ${level}`}
+                >
+                  {level}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Date Range Filter */}
+        <div>
+          <h3 class="mb-3.5 text-foreground/90 flex items-center gap-2">
+            <span class="w-1 h-5 bg-accent rounded-full"></span>
+            Date Range
+          </h3>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm text-muted-foreground mb-1.5">From</label>
+              <input
+                type="date"
+                value={dateRange.start.toISOString().split('T')[0]}
+                onChange={handleStartDateChange}
+                class="w-full px-3.5 py-2.5 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
+              />
+            </div>
+            <div>
+              <label class="block text-sm text-muted-foreground mb-1.5">To</label>
+              <input
+                type="date"
+                value={dateRange.end.toISOString().split('T')[0]}
+                onChange={handleEndDateChange}
+                class="w-full px-3.5 py-2.5 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Active Filters Summary */}
+        <div class="pt-4 border-t border-border">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-muted-foreground">Active Filters</span>
+            <span class="px-2.5 py-1 bg-accent/10 text-accent rounded-full">
+              {selectedTypes.length + selectedSeverities.length}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+} -->

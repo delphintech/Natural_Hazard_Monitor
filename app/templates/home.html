@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Natural Disaster Monitor</h1>
+                    <p class="text-sm text-gray-500">
+                        Track and analyze natural disasters worldwide
+                    </p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+            <!-- Filters Sidebar -->
+            <div class="lg:col-span-1">
+                {% include "_filters.html" %}
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="lg:col-span-3 space-y-6">
+
+                <!-- Map -->
+                <div class="h-96">
+                    {% include "_map.html" %}
+                </div>
+
+                <!-- Charts -->
+                {% include "_charts.html" %}
+
+            </div>
+        </div>
+    </main>
+
+</div>
+{% endblock %}

@@ -1,0 +1,203 @@
+<!-- import { Disaster } from '../data/disasters';
+import { useState } from 'react';
+
+interface DisasterMapProps {
+  disasters: Disaster[];
+}
+
+const getSeverityColor = (severity: number): string => {
+  const colors = {
+    1: '#fef08a', // yellow-200
+    2: '#facc15', // yellow-400
+    3: '#fb923c', // orange-400
+    4: '#f97316', // orange-500
+    5: '#dc2626', // red-600
+  };
+  return colors[severity as keyof typeof colors] || '#6b7280';
+};
+
+const getTypeEmoji = (type: Disaster['type']): string => {
+  const emojis = {
+    earthquake: '🌍',
+    hurricane: '🌀',
+    flood: '🌊',
+    wildfire: '🔥',
+    tornado: '🌪️',
+    tsunami: '🌊',
+  };
+  return emojis[type] || '⚠️';
+};
+
+// Convert lat/lng to SVG coordinates
+const latLngToPoint = (lat: number, lng: number, width: number, height: number) => {
+  const x = ((lng + 180) * width) / 360;
+  const y = ((90 - lat) * height) / 180;
+  return { x, y };
+};
+
+export function DisasterMap({ disasters }: DisasterMapProps) {
+  const [selectedDisaster, setSelectedDisaster] = useState<Disaster | null>(null);
+  const [hoveredDisaster, setHoveredDisaster] = useState<Disaster | null>(null);
+
+  const mapWidth = 1000;
+  const mapHeight = 500;
+
+  return (
+    <div class="bg-card rounded-xl shadow-md overflow-hidden h-full border border-border">
+      <div class="p-4 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
+        <h2 class="text-xl text-foreground">Disaster Locations</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">Interactive global disaster map</p>
+      </div>
+      <div class="h-[calc(100%-76px)] relative overflow-auto bg-gradient-to-br from-blue-50 to-green-50">
+        <div class="min-w-full min-h-full p-4 flex items-center justify-center">
+          <svg
+            width={mapWidth}
+            height={mapHeight}
+            viewBox={`0 0 ${mapWidth} ${mapHeight}`}
+            class="border-2 border-accent/20 rounded-lg shadow-inner bg-gradient-to-br from-blue-50 to-green-100"
+          >
+            {/* Background grid */}
+            <defs>
+              <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#cbd5e1" strokeWidth="0.3" opacity="0.5" />
+              </pattern>
+              <filter id="shadow">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3" />
+              </filter>
+            </defs>
+            <rect width={mapWidth} height={mapHeight} fill="url(#grid)" />
+
+            {/* Latitude lines */}
+            {[-60, -30, 0, 30, 60].map((lat) => {
+              const y = ((90 - lat) * mapHeight) / 180;
+              return (
+                <line
+                  key={`lat-${lat}`}
+                  x1={0}
+                  y1={y}
+                  x2={mapWidth}
+                  y2={y}
+                  stroke="#94a3b8"
+                  strokeWidth="1"
+                  strokeDasharray="5,5"
+                  opacity="0.4"
+                />
+              );
+            })}
+
+            {/* Longitude lines */}
+            {[-120, -60, 0, 60, 120].map((lng) => {
+              const x = ((lng + 180) * mapWidth) / 360;
+              return (
+                <line
+                  key={`lng-${lng}`}
+                  x1={x}
+                  y1={0}
+                  x2={x}
+                  y2={mapHeight}
+                  stroke="#94a3b8"
+                  strokeWidth="1"
+                  strokeDasharray="5,5"
+                  opacity="0.4"
+                />
+              );
+            })}
+
+            {/* Disaster markers */}
+            {disasters.map((disaster) => {
+              const { x, y } = latLngToPoint(disaster.lat, disaster.lng, mapWidth, mapHeight);
+              const radius = 8 + disaster.severity * 2;
+              const isHovered = hoveredDisaster?.id === disaster.id;
+              const isSelected = selectedDisaster?.id === disaster.id;
+
+              return (
+                <g key={disaster.id}>
+                  {/* Outer glow for emphasis */}
+                  {(isHovered || isSelected) && (
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r={radius + 5}
+                      fill={getSeverityColor(disaster.severity)}
+                      opacity="0.2"
+                      class="pointer-events-none"
+                    />
+                  )}
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={radius}
+                    fill={getSeverityColor(disaster.severity)}
+                    stroke="#ffffff"
+                    strokeWidth={isHovered || isSelected ? 3 : 2}
+                    opacity={0.9}
+                    filter={isHovered || isSelected ? 'url(#shadow)' : undefined}
+                    class="cursor-pointer transition-all"
+                    onMouseEnter={() => setHoveredDisaster(disaster)}
+                    onMouseLeave={() => setHoveredDisaster(null)}
+                    onClick={() => setSelectedDisaster(disaster)}
+                  />
+                  {isHovered && (
+                    <text
+                      x={x}
+                      y={y - radius - 8}
+                      textAnchor="middle"
+                      class="font-semibold text-xs fill-gray-900 pointer-events-none"
+                    >
+                      {disaster.name}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* Info panel */}
+        {selectedDisaster && (
+          <div class="absolute top-4 right-4 bg-card rounded-xl shadow-xl p-5 max-w-xs border-2 border-accent/30 backdrop-blur-sm">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">{getTypeEmoji(selectedDisaster.type)}</span>
+                <div>
+                  <div class="font-semibold text-foreground">{selectedDisaster.name}</div>
+                  <div class="text-sm text-muted-foreground">{selectedDisaster.location}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedDisaster(null)}
+                class="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted/50 rounded"
+              >
+                ✕
+              </button>
+            </div>
+            <div class="space-y-2.5 text-sm">
+              <div class="flex justify-between items-center py-1.5 border-b border-border/50">
+                <span class="text-muted-foreground">Type</span>
+                <span class="font-medium text-foreground">
+                  {selectedDisaster.type.charAt(0).toUpperCase() + selectedDisaster.type.slice(1)}
+                </span>
+              </div>
+              <div class="flex justify-between items-center py-1.5 border-b border-border/50">
+                <span class="text-muted-foreground">Date</span>
+                <span class="font-medium text-foreground">{selectedDisaster.date.toLocaleDateString()}</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5 border-b border-border/50">
+                <span class="text-muted-foreground">Severity</span>
+                <span class="font-medium text-destructive">{selectedDisaster.severity}/5</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5 border-b border-border/50">
+                <span class="text-muted-foreground">Casualties</span>
+                <span class="font-medium text-foreground">{selectedDisaster.casualties.toLocaleString()}</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5">
+                <span class="text-muted-foreground">Affected</span>
+                <span class="font-medium text-foreground">{selectedDisaster.affectedPeople.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+} -->
